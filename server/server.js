@@ -91,6 +91,21 @@ app.patch('/todos/:id', (req,res) =>{
 
 });
 
+app.post('/users', (req,res) => {
+  var body = _.pick(req.body, ['email', 'password']);
+  var user = new User(body);
+
+  user.save().then((doc)=>{
+    if(!doc) return res.status(404).send('Unable to create');
+
+    res.send({doc});
+  }, (e)=>{
+    res.status(404).send(e);
+  }).catch((e)=>{
+    res.status(404).send(e);
+  });
+});
+
 app.listen(port, () => {
   console.log("Started up at port ",port);
 });
