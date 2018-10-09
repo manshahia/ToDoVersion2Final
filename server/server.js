@@ -95,14 +95,10 @@ app.post('/users', (req,res) => {
   var body = _.pick(req.body, ['email', 'password']);
   var user = new User(body);
 
-  user.save().then((doc)=>{
-    if(!doc) return res.status(404).send('Unable to create');
-
-    res.send({doc});
-  }, (e)=>{
-    res.status(404).send(e);
+  user.save().then((user)=>{
+    res.send({user});
   }).catch((e)=>{
-    res.status(404).send(e);
+    res.status(400).send(e);
   });
 });
 
