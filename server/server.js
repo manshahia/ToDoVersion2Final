@@ -15,28 +15,32 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-
-app.post('/todos', (req,res) => {
+//Create New Todos
+app.post('/todos',authenticate, (req,res) => {
   var todo = new ToDo({
-    text: req.body.text
+    text: req.body.text,
+    _creator: req.user._id
   });
 
   todo.save().then( (doc)=>{ res.send(doc);}, (e)=>{res.status(400).send(e);});
 
 });
 
-app.get('/todos', (req,res) => {
-  ToDo.find().then( (todos)=> {
+app.get('/todos', authenticate, (req,res) => {
+  ToDo.find({ _creator: req.user._id }).then( (todos)=> {
     res.send({todos});
   }, (e)=> { res.status(400).send(e); });
 });
 
-app.get('/todos/:id', (req,res) => {
+app.get('/todos/:id', authenticate, (req,res) => {
   var id = req.params.id;
   if(!ObjectID.isValid(id))
     return res.status(404).send({ 'error' : 'Invalid ID'});
 
-    ToDo.findById(id).then( (doc)=> {
+    ToDo.findOne({
+      _id: id,
+      _creator: req.user._id
+    }).then( (doc)=> {
       if(!doc) return res.status(404).send();
 
       res.send({doc});
@@ -45,7 +49,7 @@ app.get('/todos/:id', (req,res) => {
 });
 });
 
-app.delete('/todos/:id', (req,res) => {
+app.delete('/todos/:id', authenticate, (req,res) => {
   //get the ID
   var id = req.params.id;
 
@@ -53,7 +57,10 @@ app.delete('/todos/:id', (req,res) => {
     return res.status(404).send();
   }
 
-ToDo.findByIdAndRemove(id).then( (doc)=> {
+ToDo.findOneAndRemove({
+  _id: id,
+  _creator: req.user._id
+}).then( (doc)=> {
   if(!doc) {
     return res.status(404).send();
   }
@@ -65,7 +72,7 @@ ToDo.findByIdAndRemove(id).then( (doc)=> {
 });
 
 
-app.patch('/todos/:id', (req,res) =>{
+app.patch('/todos/:id', authenticate, (req,res) =>{
   var id = req.params.id;
   var body = _.pick(req.body, ['text','completed']);
 
@@ -80,7 +87,10 @@ app.patch('/todos/:id', (req,res) =>{
     body.completedAt = null;
   }
 
-  ToDo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+  ToDo.findOneAndUpdate({
+    _id: id,
+    _creator: req.user._id
+  }, {$set: body}, {new: true}).then((todo) => {
     if(!todo) {
       return res.status(404).send();
     }
